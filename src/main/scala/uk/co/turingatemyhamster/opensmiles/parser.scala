@@ -35,14 +35,16 @@ object Parser {
 
   // CHIRALITY
   lazy val chiral = P(
-    "@" | "@@" |
-    "@TH1" | "@TH2" |
-    "@AL1" | "@AL2" |
-    ("@SP1" ~ oneToThirty) |
-    ("@TB1" ~ oneToThirty) )
+    "@" ~/ (
+      "@" |
+      ("TH" ~/ oneToTwo) |
+      ("AL" ~/ oneToTwo) |
+      ("SP" ~/ oneToThirty) |
+      ("TB" ~/ oneToThirty) ).? )
+  lazy val oneToTwo = CharIn('1' to '2')
   lazy val oneToThirty = oneToNine | tenToTwentyNine | thirty
   lazy val oneToNine = CharIn('1' to '9')
-  lazy val tenToTwentyNine = CharIn('1' to '2') ~ oneToNine
+  lazy val tenToTwentyNine = oneToTwo ~ DIGIT
   lazy val thirty = "30"
 
   // HYDROGENS
@@ -78,10 +80,16 @@ object Parser {
 
 class OpenSmilesParser {
   // Horrible API for Java
-  def check(smiles: String): Unit = Parser.smiles.parse(smiles) match {
+  def validate(smiles: String): Unit = Parser.smiles.parse(smiles) match {
     case f : Parsed.Failure =>
       throw new IllegalArgumentException(f.extra.traced.trace)
     case _ =>
   }
 
+  def check(smiles: String): Boolean = Parser.smiles.parse(smiles) match {
+    case _ : Parsed.Success[Unit] =>
+      true
+    case _ =>
+      false
+  }
 }
